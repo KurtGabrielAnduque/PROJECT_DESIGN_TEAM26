@@ -123,7 +123,15 @@ function TreatmentVerificationPage() {
         {/* === THIRD LAYER (Validation Result) === */}
         <div className="flex-1 flex flex-col bg-white border border-zinc-200 shadow-sm  p-6 relative overflow-hidden">
 
-          <h2 className="text-xl font-semibold text-zinc-800 mb-6">Validation Result</h2>
+          {/* Header */}
+          <div className='mb-5'>
+            <h1 className="text-2xl font-semibold text-zinc-800">
+              Review the Treatment Result of the Predicted Dosage
+            </h1>
+            <p className="text-m text-zinc-500 mt-1">
+              Review the analyzed water quality parameters and recommended dosage before proceeding to treatment verification.
+            </p>
+          </div>
 
           {/* State 1: Idle (Empty State) */}
           {validationStatus === "idle" && (
@@ -161,6 +169,7 @@ function TreatmentVerificationPage() {
           {/* State 3: Complete (Results Data) */}
           {(validationStatus === "complete" && validationResult) && (
             <div className="flex flex-col flex-1 animate-in fade-in duration-500">
+
 
               <div>
                 <h1>
