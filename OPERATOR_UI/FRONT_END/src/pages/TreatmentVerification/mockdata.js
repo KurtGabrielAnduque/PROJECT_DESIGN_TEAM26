@@ -51,9 +51,8 @@ export const validationResultData = [{
         {
             trial_no: 1,
             dose: 25,
-            resulting_turbidity: 1.20,
             resultingWaterQuality: {
-                turbidity: 200,       // NTU
+                turbidity: 1.20,       // NTU
                 ph: 6.0,
                 conductivity: 100,    // µS/cm
                 temperature: 25,      // °C

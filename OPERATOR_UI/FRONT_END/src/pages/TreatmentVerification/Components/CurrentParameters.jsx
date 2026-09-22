@@ -1,4 +1,3 @@
-import React from 'react'
 
 function CurrentParameters({ PARAMETERS, data, dosage, dispenseStatus, handleDispensing }) {
     return (
@@ -44,8 +43,6 @@ function CurrentParameters({ PARAMETERS, data, dosage, dispenseStatus, handleDis
                                             <span className={`text-sm font-medium tracking-tight ${isHighlighted ? "text-emerald-50" : "text-zinc-900"}`}>
                                                 {label}
                                             </span>
-
-
                                         </div>
 
                                         {/* Value */}

@@ -1,4 +1,4 @@
-import React, { use, useState } from 'react'
+import { useState } from 'react'
 import Navbar from '../Components/Navbar'
 
 // import mock data here
@@ -9,10 +9,18 @@ import { validationResultData, dispenseResult } from './mockdata';
 // import components here
 import CurrentParameters from './Components/CurrentParameters';
 import FlocSettings from './Components/FlocSettings';
+import PostTreatmentGrid from './Components/PostTreatmentGrid';
 
 
 const PARAMETERS = [
   { label: "Turbidity", key: "turbidity", metric: "NTU" },
+  { label: "pH", key: "ph", metric: "" },
+  { label: "Conductivity", key: "conductivity", metric: "µS/cm" },
+  { label: "Temperature", key: "temperature", metric: "°C" },
+  { label: "Alkalinity", key: "alkalinity", metric: "mg/L" },
+];
+
+const subPARAMETERS = [
   { label: "pH", key: "ph", metric: "" },
   { label: "Conductivity", key: "conductivity", metric: "µS/cm" },
   { label: "Temperature", key: "temperature", metric: "°C" },
@@ -171,32 +179,23 @@ function TreatmentVerificationPage() {
             <div className="flex flex-col flex-1 animate-in fade-in duration-500">
 
 
-              <div>
-                <h1>
-                  {validationResult.sampleRefNumber}
+              <div className='mb-3'>
+                <h1 className='text-xl font-semibold text-zinc-1000'>
+                  Sample No.:
+                  <span> </span>
+                  <span className='font-normal'>
+                    {validationResult.sampleRefNumber}
+                  </span>
                 </h1>
               </div>
 
 
-
-              {/* You can build your post-treatment parameter grid here */}
-              <div className="grid grid-cols-5 gap-3">
-                <div className="h-24 bg-green-50 border border-green-200 rounded-xl flex items-center justify-center text-green-700 text-sm font-medium">
-                  [Result Card]
-                </div>
-                <div className="h-24 bg-green-50 border border-green-200 rounded-xl flex items-center justify-center text-green-700 text-sm font-medium">
-                  [Result Card]
-                </div>
-                <div className="h-24 bg-green-50 border border-green-200 rounded-xl flex items-center justify-center text-green-700 text-sm font-medium">
-                  [Result Card]
-                </div>
-                <div className="h-24 bg-green-50 border border-green-200 rounded-xl flex items-center justify-center text-green-700 text-sm font-medium">
-                  [Result Card]
-                </div>
-                <div className="h-24 bg-green-50 border border-green-200 rounded-xl flex items-center justify-center text-green-700 text-sm font-medium">
-                  [Result Card]
-                </div>
-              </div>
+              {/* post-treatment parameter grid here */}
+              <PostTreatmentGrid
+                validationResult={validationResult}
+                data={data}
+                subPARAMETERS={subPARAMETERS}
+              />
             </div>
           )}
 

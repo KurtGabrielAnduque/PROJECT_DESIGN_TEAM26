@@ -1,4 +1,3 @@
-import React from 'react'
 
 function FlocSettings({flashMixing, setFlashMixing, flashDuration, setFlashDuration, slowMixing, setSlowMixing, slowDuration, setSlowDuration, settlingDuration, setSettlingDuration, rawWaterSample, setRawWaterSample, validationStatus, handleValidation, dispenseStatus, warning}) {
     return (
