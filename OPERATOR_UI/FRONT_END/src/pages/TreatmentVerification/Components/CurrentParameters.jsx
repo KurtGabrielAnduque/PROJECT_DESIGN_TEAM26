@@ -88,55 +88,58 @@ function CurrentParameters({ PARAMETERS, data, dosage, dispenseStatus, handleDis
                     </div>
 
                     {/* Right Col (Dosage & Pump Instruction) */}
-                    <div className="col-span-2 bg-white border border-gray-200 rounded-2xl shadow-sm relative overflow-hidden flex flex-col">
+                    <div className="col-span-1 lg:col-span-2 bg-white border border-gray-200 rounded-2xl shadow-sm relative overflow-hidden flex flex-col">
 
                         {/* Header / Status Bar */}
-                        <div className="px-5 py-3 bg-gray-50 border-b border-gray-200 flex justify-between items-center z-10">
+                        <div className="px-4 sm:px-5 py-3 bg-gray-50 border-b border-gray-200 flex justify-between items-center z-10">
                             <div className="flex gap-2">
-                                <span className="text-[10px] font-bold text-gray-600 bg-gray-200/70 border border-gray-300 px-2 py-1 rounded uppercase tracking-wider">
+                                <span className="text-[10px] sm:text-xs font-bold text-gray-600 bg-gray-200/70 border border-gray-300 px-2 py-1 rounded uppercase tracking-wider">
                                     Alum Sulfate Solution
                                 </span>
                             </div>
                         </div>
 
                         {/* Main Content: Split Brain vs Brawn */}
-                        <div className="flex flex-col sm:flex-row flex-1 divide-y sm:divide-y-0 sm:divide-x divide-gray-100">
+                        {/* Shifted the flex-row split from 'sm' to 'md' so tablet/mobile users don't get cramped numbers */}
+                        <div className="flex flex-col md:flex-row flex-1 divide-y md:divide-y-0 md:divide-x divide-gray-100">
 
                             {/* Left Side: The Science (AI Target) */}
-                            <div className="flex-1 p-6 flex flex-col justify-center relative group hover:bg-gray-50 transition-colors">
+                            <div className="flex-1 p-4 sm:p-5 lg:p-6 flex flex-col justify-center relative group hover:bg-gray-50 transition-colors">
 
-                                <h3 className="text-[11px] font-bold text-gray-800 uppercase tracking-widest mb-1 z-10">
+                                <h3 className="text-[10px] sm:text-[11px] font-bold text-gray-800 uppercase tracking-widest mb-1 z-10">
                                     Optimal Dosage
                                 </h3>
-                                <p className="text-[10px] text-gray-600 mb-3 z-10">
+                                <p className="text-[10px] text-gray-600 mb-2 sm:mb-3 z-10 line-clamp-1">
                                     Calculated for 1L raw water sample
                                 </p>
 
-                                <div className="flex items-baseline gap-2 z-10">
-                                    <span className="text-5xl font-extrabold text-gray-900 tracking-tight tabular-nums">
+                                <div className="flex items-baseline gap-1 sm:gap-2 z-10">
+                                    {/* Scaled the massive 5xl text down for mobile, normal for tablet, larger for desktop */}
+                                    <span className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-gray-900 tracking-tight tabular-nums">
                                         {dosage ? dosage : '--'}
                                     </span>
-                                    <span className="text-lg font-semibold text-gray-900">
+                                    <span className="text-sm sm:text-base lg:text-lg font-semibold text-gray-900">
                                         mg/L
                                     </span>
                                 </div>
                             </div>
 
                             {/* Right Side: The Hardware (Pump Action) */}
-                            <div className="flex-1 p-6 flex flex-col justify-center relative group hover:bg-gray-50 transition-colors">
+                            <div className="flex-1 p-4 sm:p-5 lg:p-6 flex flex-col justify-center relative group hover:bg-gray-50 transition-colors">
 
-                                <h3 className="text-[11px] font-bold text-gray-800 uppercase tracking-widest mb-1 z-10">
+                                <h3 className="text-[10px] sm:text-[11px] font-bold text-gray-800 uppercase tracking-widest mb-1 z-10">
                                     Required Dispense Volume
                                 </h3>
-                                <p className="text-[10px] text-gray-600 mb-3 z-10">
+                                <p className="text-[10px] text-gray-600 mb-2 sm:mb-3 z-10 line-clamp-1">
                                     Derived from {stockConcentration}g/L stock concentration
                                 </p>
 
-                                <div className="flex items-baseline gap-2 z-10">
-                                    <span className="text-5xl font-extrabold text-gray-900 tracking-tight tabular-nums">
+                                <div className="flex items-baseline gap-1 sm:gap-2 z-10">
+                                    {/* Scaled typography */}
+                                    <span className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-gray-900 tracking-tight tabular-nums">
                                         {volume ? volume : '--'}
                                     </span>
-                                    <span className="text-lg font-semibold text-gray-900">
+                                    <span className="text-sm sm:text-base lg:text-lg font-semibold text-gray-900">
                                         mL
                                     </span>
                                 </div>
