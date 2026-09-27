@@ -15,14 +15,14 @@ function CurrentParameters({ PARAMETERS, data, dosage, dispenseStatus, handleDis
                 </div>
 
                 {/* Grid Layout for Data */}
-                <div className="grid grid-cols-9 gap-4">
+                <div className="grid grid-cols-1 lg:grid-cols-9 gap-4">
                     {/* Left Col (Parameters) */}
-                    <div className="col-span-7 border border-zinc-200 bg-zinc-50/50 rounded-2xl p-5 shadow-sm">
+                    <div className="lg:col-span-7 border border-zinc-200 bg-zinc-50/50 rounded-2xl p-5 shadow-sm">
                         <h2 className="text-sm font-semibold text-zinc-800 uppercase tracking-wider mb-4">
                             Measured Raw Water Quality
                         </h2>
 
-                        <div className="grid grid-cols-5 gap-3">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
                             {PARAMETERS.map(({ label, key, metric }, index) => {
                                 const value = data?.waterQuality?.[key];
                                 const hasValue = value && value !== "—";
@@ -88,7 +88,7 @@ function CurrentParameters({ PARAMETERS, data, dosage, dispenseStatus, handleDis
                     </div>
 
                     {/* Right Col (Dosage & Pump Instruction) */}
-                    <div className="col-span-1 lg:col-span-2 bg-white border border-gray-200 rounded-2xl shadow-sm relative overflow-hidden flex flex-col">
+                    <div className="lg:col-span-2 bg-white border border-gray-200 rounded-2xl shadow-sm relative overflow-hidden flex flex-col">
 
                         {/* Header / Status Bar */}
                         <div className="px-4 sm:px-5 py-3 bg-gray-50 border-b border-gray-200 flex justify-between items-center z-10">
