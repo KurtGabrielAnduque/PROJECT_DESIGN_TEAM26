@@ -94,7 +94,7 @@ function CurrentParameters({ PARAMETERS, data, dosage, dispenseStatus, handleDis
                         <div className="px-5 py-3 bg-gray-50 border-b border-gray-200 flex justify-between items-center z-10">
                             <div className="flex gap-2">
                                 <span className="text-[10px] font-bold text-gray-600 bg-gray-200/70 border border-gray-300 px-2 py-1 rounded uppercase tracking-wider">
-                                    Alum (PAC)
+                                    Alum Sulfate Solution
                                 </span>
                             </div>
                         </div>

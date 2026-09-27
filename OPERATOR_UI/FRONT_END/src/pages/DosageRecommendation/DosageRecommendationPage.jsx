@@ -1,7 +1,7 @@
 import { useState } from "react";
 import Navbar from '../Components/Navbar'
 
-import { recommendationData } from './mockdata_recommendation'
+import { recommendationData, finalDataForPredictionPage } from './mockdata_recommendation'
 
 // import components here
 import DosageHeader from "./Components/DosageHeader";
@@ -52,7 +52,7 @@ function DosageRecommendationPage() {
     setTimeout(() => {
       // This block runs after 3 seconds
       // TODO: Replace this with actual Axios request later
-      setData(recommendationData[0]);
+      setData(finalDataForPredictionPage[0]);
       setState('complete');
       setModelState('predict_complete');
     }, 3000);
