@@ -1,6 +1,6 @@
+// GET request
 
-// GET REQUEST
-export const DashBoardData = [
+export const HistoryData = [
     // =========================================================
     // SAMPLE 0001
     // =========================================================

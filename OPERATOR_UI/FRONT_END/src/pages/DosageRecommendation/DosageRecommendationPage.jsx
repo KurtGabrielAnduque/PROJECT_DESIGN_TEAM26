@@ -75,9 +75,7 @@ function DosageRecommendationPage() {
       <div className="flex-1 flex flex-col min-w-0 bg-zinc-50 min-h-screen font-sans">
 
         {/*Header part*/}
-        <DosageHeader
-          state={state} // the state will be use to track changes in the process
-        />
+        <DosageHeader/>
 
         {/*BODY PART*/}
         <div className="flex-1 p-6 flex gap-6">
