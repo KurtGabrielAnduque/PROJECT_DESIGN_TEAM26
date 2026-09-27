@@ -13,7 +13,11 @@ export const recommendationData = [
         },
 
         recommendation: {
-            predictedDosage: 28,  // mg/L
+            predictedDosage: 28,  // mg/L variable name = Change to predicted dosage
+            dispensingInstructions: {
+                stockConcentration: 2.0,  // mg/mL (Your 2g/L DIY mixture) // this must be fix in the settings
+                volumeToDispense: 14.0    // mL (predictedDosage / stockConcentration) // this must be calculated in the backend
+            },
         },
 
         status: 'prediction_complete', // waiting_sample and predicting

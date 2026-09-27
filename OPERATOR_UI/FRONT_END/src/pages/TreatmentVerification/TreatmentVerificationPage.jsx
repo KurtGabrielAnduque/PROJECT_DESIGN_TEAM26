@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import Navbar from '../Components/Navbar'
+import { Link } from 'react-router-dom';
 
 // import mock data here
 import { recommendationData } from '../DosageRecommendation/mockdata_recommendation';
@@ -10,6 +11,7 @@ import { validationResultData, dispenseResult } from './mockdata';
 import CurrentParameters from './Components/CurrentParameters';
 import FlocSettings from './Components/FlocSettings';
 import PostTreatmentGrid from './Components/PostTreatmentGrid';
+import AdjustDosageModal from './Components/AdjustDosageModal';
 
 
 const PARAMETERS = [
@@ -31,7 +33,9 @@ const subPARAMETERS = [
 function TreatmentVerificationPage() {
   // the data that we get from Dosage prediction page must come here
   const [data, setData] = useState(recommendationData[0] ?? null);
-  const [dosage, setDosage] = useState(recommendationData[0].recommendation.predictedDosage);
+  const [dosage, setDosage] = useState(data.recommendation.predictedDosage ?? null);
+  const [volume, setVolume] = useState(data.recommendation.dispensingInstructions.volumeToDispense ?? null);
+  const [stockConcentration, setStockConcentration] = useState(data.recommendation.dispensingInstructions.stockConcentration ?? null);
 
   //  Flash mixing settings
   const [flashMixing, setFlashMixing] = useState(120);
@@ -56,7 +60,33 @@ function TreatmentVerificationPage() {
   // warning notification if the operator press validation button without verifying if the jar is placed in validation chamber
   const [warning, setWarning] = useState(false);
 
+  // Modal states for dosage adjustment
+  const [isAdjustModalOpen, setIsAdjustModalOpen] = useState(false);
+  const [newDosageInput, setNewDosageInput] = useState("");
 
+
+  // Adjusting Dosage
+  const handleSaveAdjustedDosage = () => {
+    const parsedDosage = parseFloat(newDosageInput);
+
+    // Basic validation to prevent empty or negative numbers
+    if (isNaN(parsedDosage) || parsedDosage <= 0) return;
+
+    // Update the AI target to the Operator's manual target
+    setDosage(parsedDosage);
+
+    // Recalculate the physical volume for the pump
+    const calculatedVolume = parsedDosage / stockConcentration;
+    setVolume(calculatedVolume);
+
+    // Reset the UI so they are forced to dispense and test the new mixture
+    setValidationStatus('idle');
+    setValidationResult(null);
+    setDispenseStatus('waiting');
+
+    // Close the modal
+    setIsAdjustModalOpen(false);
+  };
 
 
   // replace this with axios when we start implementing REST API
@@ -66,6 +96,10 @@ function TreatmentVerificationPage() {
     setTimeout(() => {
       setDispenseStatus(dispenseResult[0].dispenseStatus ?? null);
     }, 3000)
+  }
+
+  const resetTrial = () => {
+
   }
 
   const handleValidation = () => {
@@ -104,6 +138,8 @@ function TreatmentVerificationPage() {
           dispenseStatus={dispenseStatus}
           setDispenseStatus={setDispenseStatus}
           handleDispensing={handleDispensing}
+          volume={volume}
+          stockConcentration={stockConcentration}
         />
 
 
@@ -195,13 +231,70 @@ function TreatmentVerificationPage() {
                 validationResult={validationResult}
                 data={data}
                 subPARAMETERS={subPARAMETERS}
+                setValidationResult={setValidationResult}
               />
+
+              <div className="flex flex-row items-center justify-end gap-3 pt-4 mt-2 border-t border-zinc-100">
+
+                {/* Primary: Accept validated dose */}
+                <button
+                  className="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 text-white border border-emerald-600 rounded-lg shadow-sm hover:bg-emerald-700 transition-colors cursor-pointer"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"
+                    />
+                  </svg>
+
+                  <span className="text-sm font-semibold">
+                    Proceed to Full Scale Treatment
+                  </span>
+                </button>
+
+                {/* Secondary: Retest with adjusted dosage */}
+                <button
+                  className="px-5 py-2.5 bg-white text-zinc-700 border border-zinc-300 font-medium text-sm rounded-lg shadow-sm hover:bg-zinc-50 hover:text-zinc-900 transition-colors flex items-center gap-2 cursor-pointer"
+                >
+                  <svg
+                    className="w-4 h-4 text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182"
+                    />
+                  </svg>
+
+                  Start Another Test
+                </button>
+
+                <button
+                  onClick={() => {
+                    setNewDosageInput(dosage); // Pre-fill with current dosage
+                    setIsAdjustModalOpen(true);
+                  }}
+                  className="px-5 py-2.5 bg-white text-zinc-700 border border-zinc-300 font-medium text-sm rounded-lg shadow-sm hover:bg-zinc-50 hover:text-zinc-900 transition-colors flex items-center gap-2 cursor-pointer"
+                >
+                  Adjust the Dosage
+                </button>
+
+              </div>
+
+
             </div>
           )}
 
         </div>
 
       </div>
+
+      {/*Modal here*/}
+      <AdjustDosageModal
+        isAdjustModalOpen={isAdjustModalOpen}
+        setIsAdjustModalOpen={setIsAdjustModalOpen}
+        data={data}
+        newDosageInput={newDosageInput}
+        setNewDosageInput={setNewDosageInput}
+        stockConcentration={stockConcentration}
+        handleSaveAdjustedDosage={handleSaveAdjustedDosage}
+      />
 
 
     </div>

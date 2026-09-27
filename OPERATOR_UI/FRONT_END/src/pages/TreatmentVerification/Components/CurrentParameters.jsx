@@ -1,5 +1,5 @@
 
-function CurrentParameters({ PARAMETERS, data, dosage, dispenseStatus, handleDispensing }) {
+function CurrentParameters({ PARAMETERS, data, dosage, dispenseStatus, handleDispensing, volume, stockConcentration }) {
     return (
         <>
             <div className="flex flex-col bg-white border border-zinc-200 p-6 gap-6">
@@ -87,55 +87,59 @@ function CurrentParameters({ PARAMETERS, data, dosage, dispenseStatus, handleDis
                         </div>
                     </div>
 
-                    {/* Right Col (Dosage) */}
-                    <div className="col-span-2 flex flex-col bg-gradient-to-br from-blue-900 to-blue-800 border border-blue-700 rounded-2xl p-6 shadow-md relative overflow-hidden">
+                    {/* Right Col (Dosage & Pump Instruction) */}
+                    <div className="col-span-2 bg-white border border-gray-200 rounded-2xl shadow-sm relative overflow-hidden flex flex-col">
 
-                        {/* Subtle decorative glow in the background for a modern tech feel */}
-                        <div className="absolute -top-12 -right-12 w-32 h-32 bg-blue-500 rounded-full mix-blend-overlay filter blur-2xl opacity-40"></div>
-
-                        <div className="relative z-10 flex flex-col h-full">
-
-                            {/* Header Row */}
-                            <div className="flex justify-between items-start mb-6">
-                                <h2 className="text-xs font-semibold text-blue-200 uppercase tracking-widest">
-                                    Predicted Optimal Dosage
-                                </h2>
-                            </div>
-
-                            {/* Big Value */}
-                            <div className="mt-auto">
-                                {dosage ? (
-                                    <div className="flex items-baseline gap-2">
-                                        {/* Replace '24.5' with your actual data variable like data.recommendedDosage */}
-                                        <span className="text-5xl font-bold text-white tracking-tight tabular-nums drop-shadow-sm">
-                                            {dosage}
-                                        </span>
-                                        <span className="text-lg font-medium text-blue-200">
-                                            mg/L
-                                        </span>
-                                    </div>
-                                ) : (
-                                    <div className="flex items-baseline gap-2 opacity-50">
-                                        <span className="text-5xl font-bold text-white tracking-tight tabular-nums drop-shadow-sm">
-                                            --
-                                        </span>
-                                        <span className="text-lg font-medium text-blue-200">
-                                            mg/L
-                                        </span>
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Footer Row (Details/Confidence) */}
-                            <div className="mt-5 pt-4 border-t border-blue-700/60 flex items-center justify-between">
-                                <span className="text-[11px] text-blue-200 flex items-center gap-1.5 font-medium">
-                                    {/* Green dot indicating high confidence/ready */}
-                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]"></span>
-                                    High Confidence
-                                </span>
-                                <span className="text-[10px] font-semibold text-blue-100 bg-blue-800/80 border border-blue-600/50 px-2 py-1 rounded-md uppercase tracking-wide">
+                        {/* Header / Status Bar */}
+                        <div className="px-5 py-3 bg-gray-50 border-b border-gray-200 flex justify-between items-center z-10">
+                            <div className="flex gap-2">
+                                <span className="text-[10px] font-bold text-gray-600 bg-gray-200/70 border border-gray-300 px-2 py-1 rounded uppercase tracking-wider">
                                     Alum (PAC)
                                 </span>
+                            </div>
+                        </div>
+
+                        {/* Main Content: Split Brain vs Brawn */}
+                        <div className="flex flex-col sm:flex-row flex-1 divide-y sm:divide-y-0 sm:divide-x divide-gray-100">
+
+                            {/* Left Side: The Science (AI Target) */}
+                            <div className="flex-1 p-6 flex flex-col justify-center relative group hover:bg-gray-50 transition-colors">
+
+                                <h3 className="text-[11px] font-bold text-gray-800 uppercase tracking-widest mb-1 z-10">
+                                    Optimal Dosage
+                                </h3>
+                                <p className="text-[10px] text-gray-600 mb-3 z-10">
+                                    Calculated for 1L raw water sample
+                                </p>
+
+                                <div className="flex items-baseline gap-2 z-10">
+                                    <span className="text-5xl font-extrabold text-gray-900 tracking-tight tabular-nums">
+                                        {dosage ? dosage : '--'}
+                                    </span>
+                                    <span className="text-lg font-semibold text-gray-900">
+                                        mg/L
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* Right Side: The Hardware (Pump Action) */}
+                            <div className="flex-1 p-6 flex flex-col justify-center relative group hover:bg-gray-50 transition-colors">
+
+                                <h3 className="text-[11px] font-bold text-gray-800 uppercase tracking-widest mb-1 z-10">
+                                    Required Dispense Volume
+                                </h3>
+                                <p className="text-[10px] text-gray-600 mb-3 z-10">
+                                    Derived from {stockConcentration}g/L stock concentration
+                                </p>
+
+                                <div className="flex items-baseline gap-2 z-10">
+                                    <span className="text-5xl font-extrabold text-gray-900 tracking-tight tabular-nums">
+                                        {volume ? volume : '--'}
+                                    </span>
+                                    <span className="text-lg font-semibold text-gray-900">
+                                        mL
+                                    </span>
+                                </div>
                             </div>
 
                         </div>
@@ -151,7 +155,7 @@ function CurrentParameters({ PARAMETERS, data, dosage, dispenseStatus, handleDis
                     <div className="flex justify-end pt-4 mt-2 border-t border-zinc-100">
                         <button
                             onClick={handleDispensing}
-                            className="px-5 py-2.5 bg-blue-600 text-white font-medium text-sm rounded-lg shadow-sm hover:bg-blue-700 transition-colors flex items-center gap-2"
+                            className="px-5 py-2.5 bg-blue-600 text-white font-medium text-sm rounded-lg shadow-sm hover:bg-blue-700 transition-colors flex items-center gap-2 cursor-pointer"
                         >
                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
@@ -192,7 +196,7 @@ function CurrentParameters({ PARAMETERS, data, dosage, dispenseStatus, handleDis
                         {/* Secondary Button to retry */}
                         <button
                             onClick={handleDispensing}
-                            className="px-5 py-2.5 bg-white text-zinc-700 border border-zinc-300 font-medium text-sm rounded-lg shadow-sm hover:bg-zinc-50 hover:text-zinc-900 transition-colors flex items-center gap-2"
+                            className="px-5 py-2.5 bg-white text-zinc-700 border border-zinc-300 font-medium text-sm rounded-lg shadow-sm hover:bg-zinc-50 hover:text-zinc-900 transition-colors flex items-center gap-2 cursor-pointer"
                         >
                             <svg className="w-4 h-4 text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
