@@ -1,7 +1,7 @@
 import React from 'react'
 // import the necessary dependecies for page navigation
 import { Link, useLocation } from 'react-router-dom'
-import { LayoutDashboard, BrainCircuit, BadgeCheck, History } from 'lucide-react'
+import { LayoutDashboard, BrainCircuit, BadgeCheck, History, ClipboardCheck } from 'lucide-react'
 
 import MAYNILADLOGO from '../../assets/mayniladLogo.png'
 
@@ -11,6 +11,7 @@ function Navbar() {
         { name: 'Dosage Recommendation', path: '/DosageRecommendation', icon: <BrainCircuit size={20} /> },
         { name: 'Treatment Verification', path: '/TreatmentVerification', icon: <BadgeCheck size={20} /> },
         { name: 'Treatment History', path: '/History', icon: <History size={20} /> },
+        { name: 'Treatment Assessment', path: '/TreatmentAssessment', icon: <ClipboardCheck size={20} /> },
     ]
 
     // tell the user on where the user is

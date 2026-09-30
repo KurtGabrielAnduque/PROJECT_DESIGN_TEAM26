@@ -16,12 +16,14 @@ import HistoryPage from './pages/TreatmentHistory/HistoryPage'
 // Import Treatment Verification page (main)
 import TreatmentVerificationPage from './pages/TreatmentVerification/TreatmentVerificationPage'
 
+// Import Treatment Assessment page (main)
+import TreatmentAssessmentPage from './pages/CoagulationProcess/TreatmentAssessmentPage'
 
 function App() {
 
   return (
     <>
-      
+
       <Routes>
         {/*DashBoard route page note: place attributes later when we start creating the parameters*/}
         <Route index element={
@@ -55,6 +57,14 @@ function App() {
         <Route path='/TreatmentVerification' element={
           <TreatmentVerificationPage
 
+          />
+        }>
+
+        </Route>
+
+        {/*Treatment Verification route page note: place attributes later when we start creating the parameters*/}
+        <Route path='/TreatmentAssessment' element={
+          <TreatmentAssessmentPage
           />
         }>
 
