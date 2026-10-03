@@ -1,5 +1,5 @@
 from django.db import models
-from .lab_settings_config import LabSettingsConfig
+from .lab_settings_config import LabSettingConfiguration
 from .raw_water_sample import RawWaterSample
 
 
@@ -15,7 +15,7 @@ class ValidationSession(models.Model):
 
     # many settings is application to multiple session
     lab_settings_configuration = models.ForeignKey(
-        LabSettingsConfig, 
+        LabSettingConfiguration, 
         on_delete=models.PROTECT, 
         related_name='validation_sessions'
     )
