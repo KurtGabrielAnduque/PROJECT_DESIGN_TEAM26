@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
+import axios from 'axios'
 
 import './App.css'
 
@@ -19,7 +20,32 @@ import TreatmentVerificationPage from './pages/TreatmentVerification/TreatmentVe
 // Import Treatment Assessment page (main)
 import TreatmentAssessmentPage from './pages/CoagulationProcess/TreatmentAssessmentPage'
 
+import LabSettingsConfigPage from './pages/LabSettingsConfig/LabSettingsConfigPage'
+
 function App() {
+  // State to hold the current active settings from backend
+  const [activeSettings, setActiveSettings] = useState(null); // hold the data sent from the backend
+  const [isLoading, setIsLoading] = useState(true);
+  
+  const loadLabSettings = async () => {
+    try {
+      setIsLoading(true); // Ensure loading is true when we start fetching
+      let labSettings = await axios.get('http://127.0.0.1:8000/api/lab-settings/current/');
+      console.log(labSettings.data);
+      setActiveSettings(labSettings.data);
+    } catch (error) {
+      console.log(`Error Fetching Data: ${error}`);
+      setActiveSettings(null); // Ensure it resets on error so the "Empty State" triggers
+    } finally {
+      // 2. Use 'finally' so loading stops whether the request succeeds or fails
+      setIsLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    loadLabSettings();
+  }, [])
+
 
   return (
     <>
@@ -67,6 +93,20 @@ function App() {
           <TreatmentAssessmentPage
           />
         }>
+
+        </Route>
+
+
+        <Route path='/LabSettings' element={
+          <LabSettingsConfigPage
+            activeSettings={activeSettings}
+            setActiveSettings={setActiveSettings}
+            isLoading={isLoading}
+            setIsLoading={setIsLoading}
+            loadLabSettings={loadLabSettings}
+          />
+        }>
+
 
         </Route>
 

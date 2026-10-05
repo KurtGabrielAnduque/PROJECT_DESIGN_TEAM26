@@ -54,24 +54,24 @@ from api.models import LabSettingConfiguration, CoagulationConfiguration, RawWat
 class SlowMixingConfig(serializers.ModelSerializer):
     class Meta:
         model = SlowMixingConfiguration
-        field = ['sequence_no', 'rpm', 'duration']
+        fields = ['sequence_no', 'rpm', 'duration']
 
 class CoagulationConfig(serializers.ModelSerializer):
-    slow_mixing_configuration = SlowMixingConfig(many=True)
+    slow_mixing_configurations = SlowMixingConfig(many=True)
 
     class Meta:
         model = CoagulationConfiguration
-        field = ['flash_mixing_speed', 'flash_mixing_duration', 'coagulant_dispense_timing', 'slow_mixing_configuration', 'settling_duration']
+        fields = ['flash_mixing_speed', 'flash_mixing_duration','coagulant_dispense_timing', 'slow_mixing_configurations', 'settling_duration']
 
 class ConcentrationConfig(serializers.ModelSerializer):
     class Meta:
         model = ConcentrationConfiguration
-        field = ['sample_volume','stock_concentration']
+        fields = ['sample_volume','stock_concentration']
 
 class RawWaterAnalysisConfig(serializers.ModelSerializer):
     class Meta:
         model = RawWaterAnalysisConfiguration
-        field = ['stirring_speed','stirring_duration']
+        fields = ['stirring_speed','stirring_duration']
 
 
 class GetLabSettings(serializers.ModelSerializer):
@@ -81,4 +81,4 @@ class GetLabSettings(serializers.ModelSerializer):
 
     class Meta:
         model = LabSettingConfiguration
-        field = ['name', 'version', 'is_active', 'coagulation_config', 'concentration_config', 'analysis_config', 'created_at']
+        fields = ['name', 'version', 'is_active', 'coagulation_config', 'concentration_config', 'analysis_config', 'created_at']

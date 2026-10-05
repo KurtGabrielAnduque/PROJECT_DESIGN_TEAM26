@@ -1,7 +1,7 @@
 import React from 'react'
 // import the necessary dependecies for page navigation
 import { Link, useLocation } from 'react-router-dom'
-import { LayoutDashboard, BrainCircuit, BadgeCheck, History, ClipboardCheck } from 'lucide-react'
+import { LayoutDashboard, BrainCircuit, BadgeCheck, History, ClipboardCheck, Settings } from 'lucide-react'
 
 import MAYNILADLOGO from '../../assets/mayniladLogo.png'
 
@@ -33,11 +33,10 @@ function Navbar() {
                 </div>
             </div>
 
-            {/* Navigation Links */}
+            {/* Main Navigation Links (flex-1 pushes everything below it to the bottom) */}
             <div className="flex-1 py-6 px-4 space-y-2 overflow-y-auto">
                 <p className="px-2 text-xs font-bold text-slate-900 uppercase tracking-wider mb-4">Main Menu</p>
 
-                {/* SENIOR FIX: Changed from { } to ( ) for implicit return! */}
                 {navLinks.map((link) => (
                     <Link
                         key={link.name}
@@ -55,6 +54,23 @@ function Navbar() {
                         {link.name}
                     </Link>
                 ))}
+            </div>
+
+            {/* Bottom Settings Section */}
+            <div className="p-4 border-t border-zinc-100">
+                <Link
+                    to="/LabSettings"
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 font-semibold text-sm ${isActive('/LabSettings')
+                        ? 'bg-blue-50 text-blue-600 shadow-sm ring-1 ring-blue-500/10' 
+                        : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'    
+                        }`}
+                >
+                    {isActive('/LabSettings') && <div className="absolute left-4 w-1 h-6 bg-blue-500 rounded-full" />}
+                    <span className={isActive('/LabSettings') ? 'text-blue-500' : 'text-slate-400'}>
+                        <Settings size={20} />
+                    </span>
+                    Settings
+                </Link>
             </div>
 
         </aside>
