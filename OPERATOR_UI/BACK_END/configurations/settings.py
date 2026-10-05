@@ -132,6 +132,8 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173", # here is the default react port 
 ]
 
+# please replace this one after getting an actual ip address from the microtoller during the setup
+MICROCONTROLLER_BASE_URL = 'http://192.168.254.180' 
 
 # Email
 # https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration
@@ -141,3 +143,4 @@ MAILERS = {
         'BACKEND': 'django.core.mail.backends.console.EmailBackend',
     },
 }
+
