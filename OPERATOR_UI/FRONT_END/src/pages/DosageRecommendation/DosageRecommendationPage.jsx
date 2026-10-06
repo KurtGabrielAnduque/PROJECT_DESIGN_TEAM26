@@ -1,5 +1,6 @@
 import { useState } from "react";
 import Navbar from '../Components/Navbar'
+import axios from "axios";
 
 import { recommendationData, finalDataForPredictionPage } from './mockdata_recommendation'
 
@@ -36,26 +37,44 @@ function DosageRecommendationPage() {
   const [warning, setWarning] = useState(false);
 
   // Start the analysis
-  const handleStartAnalysis = () => {
+  const handleStartAnalysis = async () => {
     if (!sample) {
       setWarning(true);
       return;
     }
 
-    // Set state to analyzing to trigger the loading screen
-    setState('analyzing');
-    setModelState('predicting');
-    setWarning(false);
-    setData(null); // ensure table is empty while loading
 
-    // Simulate waiting for the backend using setTimeout (e.g., 3 seconds delay)
-    setTimeout(() => {
-      // This block runs after 3 seconds
-      // TODO: Replace this with actual Axios request later
-      setData(finalDataForPredictionPage[0]);
-      setState('complete');
-      setModelState('predict_complete');
-    }, 3000);
+
+    try {
+      // Set state to analyzing to trigger the loading screen
+      setState('analyzing');
+      setModelState('predicting');
+      setWarning(false);
+      setData(null); // ensure table is empty while loading
+
+      await axios.post('http://127.0.0.1:8000/api/prediction/start/', {});
+      // Simulate waiting for the backend using setTimeout (e.g., 3 seconds delay)
+
+
+      setTimeout(() => {
+        // This block runs after 3 seconds
+        // TODO: Replace this with actual Axios request later
+        setData(finalDataForPredictionPage[0]);
+        setState('complete');
+        setModelState('predict_complete');
+      }, 65000);
+
+
+    } catch (error) {
+      console.error(
+        'Failed to start raw-water analysis:',
+        error
+      );
+
+      setState('idle');
+      setModelState('idle');
+      setWarning(true);
+    }
   }
 
   // Rest the states to Perform new Analysis
@@ -75,7 +94,7 @@ function DosageRecommendationPage() {
       <div className="flex-1 flex flex-col min-w-0 bg-zinc-50 min-h-screen font-sans">
 
         {/*Header part*/}
-        <DosageHeader/>
+        <DosageHeader />
 
         {/*BODY PART*/}
         <div className="flex-1 p-6 flex gap-6">
