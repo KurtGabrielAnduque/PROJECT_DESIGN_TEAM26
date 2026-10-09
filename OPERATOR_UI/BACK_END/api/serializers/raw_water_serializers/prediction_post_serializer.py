@@ -3,6 +3,13 @@ from rest_framework import serializers
 # this is the only payload that we need from the esp 32
 class RawWaterAnalysisInputSerializer(serializers.Serializer):
 
+    # Used to correlate the sensor result with
+    # the analysis command that started it.
+    analysis_request_id = serializers.UUIDField(
+        required=False,
+        allow_null=True
+    )
+
     turbidity = serializers.DecimalField(
         max_digits=8,
         decimal_places=2,

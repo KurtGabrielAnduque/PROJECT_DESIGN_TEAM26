@@ -133,7 +133,7 @@ CORS_ALLOWED_ORIGINS = [
 ]
 
 # please replace this one after getting an actual ip address from the microtoller during the setup
-MICROCONTROLLER_BASE_URL = 'http://192.168.254.180' 
+MICROCONTROLLER_BASE_URL = 'http://192.168.254.182' 
 
 # Email
 # https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration

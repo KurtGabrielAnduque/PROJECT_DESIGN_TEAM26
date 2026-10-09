@@ -41,6 +41,18 @@ def create_raw_water_sample(request):
             status=status.HTTP_400_BAD_REQUEST
         )
 
+    # Seperate the analysis request ID that we get
+    # from the current payload of the ESP32
+    validated_data = serializer.validated_data.copy()
+
+    # get the identifier only seperate it
+    analysis_request_id = validated_data.pop('analysis_request_id',None)
+
+
+    # Now get the cleaned data
+    # save the validated sensor data to simplify
+    water_quality_data = validated_data
+
     # get the latest active lab settings configuration
     active_configuration = (
         LabSettingConfiguration.objects.filter(is_active = True).order_by('-created_at').first()
@@ -56,8 +68,6 @@ def create_raw_water_sample(request):
             status=status.HTTP_400_BAD_REQUEST
         )
 
-    # save the validated sensor data to simplify
-    water_quality_data = serializer.validated_data
 
     # GENERATE THE NEXT SAMPLE REFERENCE NUMBER
     last_sample = (
@@ -119,11 +129,17 @@ def create_raw_water_sample(request):
     ## return a success response
     return Response(
         {
-            "message": 'Raw-water sample analyzed successfully.',
-            "sample_id": raw_water_sample.id,
-            "sample_ref_number": raw_water_sample.sample_ref_number,
-            "predicted_dosage": predicted_dosage,
-            "volume_to_dispense": volume_to_dispense
+            'message': 'Raw-water sample analyzed successfully.',
+            'status': 'prediction_complete',
+            'analysis_request_id': (
+                str(analysis_request_id)
+                if analysis_request_id
+                else None
+            ),
+            'sample_id': raw_water_sample.id,
+            'sample_ref_number': raw_water_sample.sample_ref_number,
+            'predicted_dosage': predicted_dosage,
+            'volume_to_dispense': volume_to_dispense
         },
         status=status.HTTP_201_CREATED
     )

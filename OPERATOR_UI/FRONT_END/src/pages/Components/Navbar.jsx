@@ -9,7 +9,6 @@ function Navbar() {
     const navLinks = [
         { name: 'DashBoard', path: '/', icon: <LayoutDashboard size={20} /> },
         { name: 'Dosage Recommendation', path: '/DosageRecommendation', icon: <BrainCircuit size={20} /> },
-        { name: 'Treatment Verification', path: '/TreatmentVerification', icon: <BadgeCheck size={20} /> },
         { name: 'Treatment History', path: '/History', icon: <History size={20} /> },
         { name: 'Treatment Assessment', path: '/TreatmentAssessment', icon: <ClipboardCheck size={20} /> },
     ]
