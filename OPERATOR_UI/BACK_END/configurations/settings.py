@@ -138,9 +138,16 @@ MICROCONTROLLER_BASE_URL = 'http://192.168.254.182'
 # Email
 # https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration
 
+ALLOWED_HOSTS = [
+    'localhost',
+    '127.0.0.1',
+    '192.168.254.144',
+]
+
 MAILERS = {
     'default': {
         'BACKEND': 'django.core.mail.backends.console.EmailBackend',
     },
 }
+
 

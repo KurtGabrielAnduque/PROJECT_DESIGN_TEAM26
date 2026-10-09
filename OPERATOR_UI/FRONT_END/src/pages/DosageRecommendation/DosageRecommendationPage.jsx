@@ -27,6 +27,31 @@ const modelSteps = [
 ];
 
 
+// GET LATEST RAW WATER QUALITY ANALYSIS
+const API_BASE_URL = 'http://127.0.0.1:8000/api/prediction';
+
+const delay = (ms) =>
+  new Promise((resolve) => setTimeout(resolve, ms));
+
+async function fetchLatestPrediction() {
+  try {
+    const response = await axios.get(
+      `${API_BASE_URL}/latest/`
+    );
+
+    return response.data;
+  } catch (error) {
+    // No completed prediction exists yet.
+    if (error.response?.status === 404) {
+      return null;
+    }
+
+    throw error;
+  }
+}
+// --------------------------------------
+
+
 // main function
 function DosageRecommendationPage() {
   const [state, setState] = useState("idle"); // idle | analyzing | complete
@@ -43,31 +68,118 @@ function DosageRecommendationPage() {
       return;
     }
 
-
-
     try {
-      // Set state to analyzing to trigger the loading screen
+      // Get the latest result BEFORE starting a new analysis.
+      const previousPrediction = await fetchLatestPrediction();
+
+      const previousSampleId = previousPrediction?.id ?? null;
+
+      // Update the UI.
       setState('analyzing');
       setModelState('predicting');
       setWarning(false);
-      setData(null); // ensure table is empty while loading
+      setData(null);
 
-      await axios.post('http://127.0.0.1:8000/api/prediction/start/', {});
-      // Simulate waiting for the backend using setTimeout (e.g., 3 seconds delay)
+      // Ask Django to start the ESP32 analysis.
+      const startResponse = await axios.post(`${API_BASE_URL}/start/`, {});
 
+      console.log('Analysis command accepted:', startResponse.data);
 
-      setTimeout(() => {
-        // This block runs after 3 seconds
-        // TODO: Replace this with actual Axios request later
-        setData(finalDataForPredictionPage[0]);
-        setState('complete');
-        setModelState('predict_complete');
-      }, 65000);
+      // Wait for the ESP32 measurements and ML result.
+      const timeoutMs = 180000; // 3 minutes maximum
+      const pollingIntervalMs = 2000;
+      const startTime = Date.now();
 
+      let completedPrediction = null;
+
+      while (Date.now() - startTime < timeoutMs) {
+        await delay(pollingIntervalMs);
+
+        const latestPrediction = await fetchLatestPrediction();
+
+        // A new sample ID indicates a newer completed result.
+        if (
+          latestPrediction &&
+          latestPrediction.id !== previousSampleId
+        ) {
+          completedPrediction = latestPrediction;
+          break;
+        }
+      }
+
+      if (!completedPrediction) {
+        throw new Error(
+          'Analysis timed out while waiting for the completed prediction.'
+        );
+      }
+
+      // Convert the API response to the frontend's existing data shape.
+      const predictionData = {
+        id: completedPrediction.id,
+
+        sampleRefNumber:
+          completedPrediction.sample_ref_number,
+
+        waterQuality: {
+          turbidity: Number(
+            completedPrediction.raw_water_quality.turbidity
+          ),
+          ph: Number(
+            completedPrediction.raw_water_quality.pH
+          ),
+          conductivity: Number(
+            completedPrediction.raw_water_quality.conductivity
+          ),
+          temperature: Number(
+            completedPrediction.raw_water_quality.temperature
+          ),
+          alkalinity: Number(
+            completedPrediction.raw_water_quality.alkalinity
+          )
+        },
+
+        recommendation: {
+          id: completedPrediction.recommendation.id,
+
+          predictedDosage: Number(
+            completedPrediction.recommendation.predicted_dosage
+          ),
+
+          volumeToDispense: Number(
+            completedPrediction.recommendation.volume_to_dispense
+          ),
+
+          concentrationConfiguration: {
+            id:
+              completedPrediction.recommendation
+                .concentration_configuration.id,
+
+            sampleVolume: Number(
+              completedPrediction.recommendation
+                .concentration_configuration.sample_volume
+            ),
+
+            stockConcentration: Number(
+              completedPrediction.recommendation
+                .concentration_configuration.stock_concentration
+            )
+          }
+        },
+
+        status: 'prediction_complete',
+
+        analyzedAt: completedPrediction.analyzed_at
+      };
+
+      console.log(predictionData);
+      // Display the real result.
+      setData(predictionData);
+      setState('complete');
+      setModelState('predict_complete');
 
     } catch (error) {
       console.error(
-        'Failed to start raw-water analysis:',
+        'Failed to complete raw-water analysis:',
         error
       );
 
@@ -75,7 +187,8 @@ function DosageRecommendationPage() {
       setModelState('idle');
       setWarning(true);
     }
-  }
+  };
+
 
   // Rest the states to Perform new Analysis
   const reset = () => {

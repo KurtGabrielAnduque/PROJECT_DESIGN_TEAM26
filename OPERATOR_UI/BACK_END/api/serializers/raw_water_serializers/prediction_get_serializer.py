@@ -19,7 +19,7 @@ class RawWaterQualitySerializer(serializers.ModelSerializer):
 # Serialize the dosage recommendation
 class RecommendationSerializer(serializers.ModelSerializer):
     concentration_configuration = ConcentrationConfig(
-        source='lab_setting_configuration.concentration_config',
+        source='lab_settings_configuration.concentration_config',
         read_only=True
     )
 
