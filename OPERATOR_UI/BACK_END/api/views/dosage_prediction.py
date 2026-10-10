@@ -46,24 +46,41 @@ def create_raw_water_sample(request):
     validated_data = serializer.validated_data.copy()
 
     # get the identifier only seperate it
-    analysis_request_id = validated_data.pop('analysis_request_id',None)
+    analysis_request_id = validated_data.pop('analysis_request_id')
 
+    lab_settings_configuration_id = validated_data.pop('lab_settings_configuration_id')
 
     # Now get the cleaned data
     # save the validated sensor data to simplify
     water_quality_data = validated_data
 
-    # get the latest active lab settings configuration
-    active_configuration = (
-        LabSettingConfiguration.objects.filter(is_active = True).order_by('-created_at').first()
-    )
+    # Prevent the same request from creating duplicate samples.
+    existing_sample = RawWaterSample.objects.filter(analysis_request_id=analysis_request_id).first()
 
-    # if there are no current active lab configurations
-    # inform the operator
-    if not active_configuration:
+    if existing_sample:
         return Response(
             {
-                'message': 'No active lab settings configuration found.'
+                'message': (
+                    'Measurements for this analysis request '
+                    'have already been received.'
+                ),
+                'analysis_request_id': str(analysis_request_id),
+                'sample_id': existing_sample.id,
+                'sample_ref_number': existing_sample.sample_ref_number
+            },
+            status=status.HTTP_409_CONFLICT
+        )
+
+    # 4. Retrieve the exact configuration version used at start.
+    lab_configuration = (LabSettingConfiguration.objects.filter(pk=lab_settings_configuration_id).first())
+
+    if not lab_configuration:
+        return Response(
+            {
+                'message': (
+                    'The lab settings configuration returned '
+                    'by the microcontroller was not found.'
+                )
             },
             status=status.HTTP_400_BAD_REQUEST
         )
@@ -77,9 +94,7 @@ def create_raw_water_sample(request):
     )
 
     if last_sample:
-        last_number = int(
-            last_sample.sample_ref_number.split('-')[-1]
-        )
+        last_number = int(last_sample.sample_ref_number.split('-')[-1])
         next_number = last_number + 1
     else:
         next_number = 1
@@ -89,21 +104,22 @@ def create_raw_water_sample(request):
 
     # create the sample reference id to save the received measure raw water quality parameters
     raw_water_sample = RawWaterSample.objects.create(
-        sample_ref_number = sample_ref_number,
-        lab_settings_configuration = active_configuration
+        analysis_request_id=analysis_request_id,
+        sample_ref_number=sample_ref_number,
+        lab_settings_configuration = lab_configuration
     )
 
     # save the raw water quality to the parent table
     RawWaterQuality.objects.create(
-        raw_water_sample = raw_water_sample, ** water_quality_data
+        raw_water_sample = raw_water_sample, **water_quality_data
     )
 
     # give feed the data from the sensors to the machine learning
-    # let it predict 
+    # let it predict using the service function
     predicted_dosage = Decimal(str(predict_coagulant_dose(water_quality_data)))
 
     # get the concentration configuration of the current active lab settings 
-    concentration_config = active_configuration.concentration_config
+    concentration_config = lab_configuration.concentration_config
 
     # Calculate the required stock-solution volume:
     # get the specific parameters need for the computation
@@ -120,7 +136,7 @@ def create_raw_water_sample(request):
     # save the prediction to the database
     Recommendation.objects.create(
         raw_water_sample = raw_water_sample,
-        lab_settings_configuration = active_configuration,
+        lab_settings_configuration = lab_configuration,
         predicted_dosage = predicted_dosage,
         volume_to_dispense = volume_to_dispense
     )
@@ -131,11 +147,8 @@ def create_raw_water_sample(request):
         {
             'message': 'Raw-water sample analyzed successfully.',
             'status': 'prediction_complete',
-            'analysis_request_id': (
-                str(analysis_request_id)
-                if analysis_request_id
-                else None
-            ),
+            'analysis_request_id': (str(analysis_request_id)),
+            'lab_settings_configuration_id': lab_configuration.id,
             'sample_id': raw_water_sample.id,
             'sample_ref_number': raw_water_sample.sample_ref_number,
             'predicted_dosage': predicted_dosage,
@@ -151,15 +164,36 @@ def create_raw_water_sample(request):
 @api_view(['GET'])
 def get_latest_prediction(request):
 
-    # Get the latest sample that already has a recommendation.
-    latest_sample = (
-        RawWaterSample.objects
-        .filter(recommendation__isnull=False)
-        .order_by('-analyzed_at')
-        .first()
+    analysis_request_id = request.query_params.get(
+        'analysis_request_id'
     )
 
-    # If no completed prediction exists yet
+    samples = RawWaterSample.objects.filter(
+        recommendation__isnull=False
+    )
+
+    if analysis_request_id:
+        try:
+            request_id = uuid.UUID(analysis_request_id)
+        except (ValueError, TypeError, AttributeError):
+            return Response(
+                {
+                    'message': 'Invalid analysis_request_id.'
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Retrieve the result of this exact analysis command.
+        latest_sample = samples.filter(
+            analysis_request_id=request_id
+        ).first()
+
+    else:
+        # Preserve the existing behavior when no request ID is given.
+        latest_sample = samples.order_by(
+            '-analyzed_at'
+        ).first()
+
     if not latest_sample:
         return Response(
             {
@@ -168,10 +202,7 @@ def get_latest_prediction(request):
             status=status.HTTP_404_NOT_FOUND
         )
 
-    # Serialize the complete prediction data
-    serializer = PredictionSampleSerializer(
-        latest_sample
-    )
+    serializer = PredictionSampleSerializer(latest_sample)
 
     return Response(
         {
@@ -211,7 +242,12 @@ def start_raw_water_analysis_command(request):
     # Send the command and configuration to themicrocontroller
     try:
 
-        microcontroller_response = start_raw_water_analysis(settings.MICROCONTROLLER_BASE_URL, analysis_configuration, analysis_request_id)
+        microcontroller_response = start_raw_water_analysis(
+                                        microcontroller_base_url = settings.MICROCONTROLLER_BASE_URL,
+                                        lab_settings_configuration_id = active_configuration.id,
+                                        analysis_configuration = analysis_configuration,
+                                        analysis_request_id = analysis_request_id
+                                    )
 
     except requests.exceptions.Timeout:
 

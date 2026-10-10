@@ -1,6 +1,6 @@
 import requests
 
-def start_raw_water_analysis(microcontroller_base_url, analysis_configuration, analysis_request_id):
+def start_raw_water_analysis(microcontroller_base_url, analysis_configuration, analysis_request_id, lab_settings_configuration_id):
 
     # prepare the http url that will be use to perform analysis in microcontroller
     url = f'{microcontroller_base_url}/start_analysis/'
@@ -14,7 +14,13 @@ def start_raw_water_analysis(microcontroller_base_url, analysis_configuration, a
         # instead of increasing the timeout value
         # I think its better if we do a id system wherein if the microprocessor remember its identifier
         # then sends this identifier back along with the result
-        'analysis_request_id': analysis_request_id, 
+        'analysis_request_id': str(analysis_request_id), 
+
+        # Parent settings bundle ID so we have a save lab settings once esp32 
+        # intends to send the finish analysis
+        'lab_settings_configuration_id': (lab_settings_configuration_id),
+
+        
         'analysis_configuration': {
             'id': analysis_configuration.id,
             'stirring_speed': analysis_configuration.stirring_speed,

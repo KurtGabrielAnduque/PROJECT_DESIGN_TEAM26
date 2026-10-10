@@ -46,6 +46,7 @@ class PredictionSampleSerializer(serializers.ModelSerializer):
         model = RawWaterSample
         fields = [
             'id',
+            'analysis_request_id',
             'sample_ref_number',
             'raw_water_quality',
             'recommendation',

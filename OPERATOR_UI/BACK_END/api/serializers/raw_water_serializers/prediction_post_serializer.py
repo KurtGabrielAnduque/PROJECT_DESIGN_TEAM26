@@ -5,10 +5,9 @@ class RawWaterAnalysisInputSerializer(serializers.Serializer):
 
     # Used to correlate the sensor result with
     # the analysis command that started it.
-    analysis_request_id = serializers.UUIDField(
-        required=False,
-        allow_null=True
-    )
+    analysis_request_id = serializers.UUIDField()
+
+    lab_settings_configuration_id = serializers.IntegerField(min_value=1)
 
     turbidity = serializers.DecimalField(
         max_digits=8,

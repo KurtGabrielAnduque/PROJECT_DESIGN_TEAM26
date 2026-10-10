@@ -1,15 +1,17 @@
 from django.db import models
 from .lab_settings_config import LabSettingConfiguration
+import uuid
 
 
 class RawWaterSample(models.Model):
     sample_ref_number = models.CharField(max_length=20, unique=True, editable=False)
+    analysis_request_id = models.UUIDField(unique=True, null=True, blank=True, editable=False )
     # bro dont delete the LAB CONFIGURATION if you want to delete smoe of the history
     lab_settings_configuration = models.ForeignKey(LabSettingConfiguration, on_delete=models.PROTECT, related_name='raw_water_samples')
     analyzed_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f'ID: {self.sample_ref_number}'
+        return f'ID: {self.sample_ref_number}  req id: {self.analysis_request_id}'
 
 class RawWaterQuality(models.Model):
     # of course a water quality belongs only to one sample
