@@ -5,7 +5,7 @@ from .raw_water_sample import RawWaterSample
 
 class ValidationSession(models.Model):
 
-    # a validation session is only referring to a one sample that we are trying to treat
+    # a validation session is only referring to a one sample or current raw water quality parameters that we are trying to treat
     # so this should be one to one
     raw_water_sample = models.OneToOneField(
         RawWaterSample, 
@@ -13,16 +13,16 @@ class ValidationSession(models.Model):
         related_name='validation_session'
     )
 
-    # many settings is application to multiple session
+    # the latest settings, is applicable to multiple session
     lab_settings_configuration = models.ForeignKey(
         LabSettingConfiguration, 
         on_delete=models.PROTECT, 
         related_name='validation_sessions'
     )
 
-    # it is normal that our final_trial should be null because we are not testing our dosage 
+    # it is normal that our final_trial should be null because we are not testing our dosage yet
     final_trial = models.ForeignKey(
-        "ValidationTrial", # because ValidationTrial is declared later in the file
+        "ValidationTrial", # make it string because ValidationTrial is declared later in the file
         on_delete=models.SET_NULL, 
         null=True, 
         blank=True, 
