@@ -33,15 +33,17 @@ const API_BASE_URL = 'http://127.0.0.1:8000/api/prediction';
 const delay = (ms) =>
   new Promise((resolve) => setTimeout(resolve, ms));
 
-async function fetchLatestPrediction() {
+async function fetchLatestPrediction(analysisRequestId = null) {
   try {
-    const response = await axios.get(
-      `${API_BASE_URL}/latest/`
-    );
+    const url = analysisRequestId
+      ? `${API_BASE_URL}/latest/?analysis_request_id=${encodeURIComponent(analysisRequestId)}`
+      : `${API_BASE_URL}/latest/`;
+
+    const response = await axios.get(url);
 
     return response.data;
+
   } catch (error) {
-    // No completed prediction exists yet.
     if (error.response?.status === 404) {
       return null;
     }
@@ -69,10 +71,6 @@ function DosageRecommendationPage() {
     }
 
     try {
-      // Get the latest result BEFORE starting a new analysis.
-      const previousPrediction = await fetchLatestPrediction();
-
-      const previousSampleId = previousPrediction?.id ?? null;
 
       // Update the UI.
       setState('analyzing');
@@ -85,22 +83,40 @@ function DosageRecommendationPage() {
 
       console.log('Analysis command accepted:', startResponse.data);
 
+      const analysisRequestId =
+        startResponse.data.analysis_request_id;
+
+      if (!analysisRequestId) {
+        throw new Error(
+          'The backend did not return an analysis request ID.'
+        );
+      }
+
+      console.log(
+        'Analysis command accepted:',
+        startResponse.data
+      );
+
       // Wait for the ESP32 measurements and ML result.
-      const timeoutMs = 180000; // 3 minutes maximum
+      const timeoutMs = 180000; // maximum of 3 minutes for waiting time to get the latest analysis
       const pollingIntervalMs = 2000;
       const startTime = Date.now();
 
       let completedPrediction = null;
 
       while (Date.now() - startTime < timeoutMs) {
+
         await delay(pollingIntervalMs);
 
-        const latestPrediction = await fetchLatestPrediction();
+        // Only retrieve the result belonging to this command.
+        const latestPrediction = await fetchLatestPrediction(
+          analysisRequestId
+        );
 
-        // A new sample ID indicates a newer completed result.
         if (
           latestPrediction &&
-          latestPrediction.id !== previousSampleId
+          latestPrediction.analysis_request_id === analysisRequestId &&
+          latestPrediction.recommendation
         ) {
           completedPrediction = latestPrediction;
           break;
@@ -109,10 +125,9 @@ function DosageRecommendationPage() {
 
       if (!completedPrediction) {
         throw new Error(
-          'Analysis timed out while waiting for the completed prediction.'
+          'Timed out waiting for the result of this analysis request.'
         );
       }
-
       // Convert the API response to the frontend's existing data shape.
       const predictionData = {
         id: completedPrediction.id,
