@@ -11,7 +11,7 @@ class RawWaterSample(models.Model):
     analyzed_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f'ID: {self.sample_ref_number}  req id: {self.analysis_request_id}'
+        return f'ID: {self.id} {self.sample_ref_number}  req id: {self.analysis_request_id}'
 
 class RawWaterQuality(models.Model):
     # of course a water quality belongs only to one sample
