@@ -154,3 +154,35 @@ class CoagulationCompletionRequestSerializer(serializers.Serializer):
             )
 
         return attrs
+
+
+
+
+from decimal import Decimal
+
+# Add ValidationSession to your existing api.models imports.
+from api.models import ValidationSession
+
+
+class StartNextValidationTrialRequestSerializer(serializers.Serializer):
+    validation_session_id = serializers.PrimaryKeyRelatedField(
+        queryset=ValidationSession.objects.all(),
+        source="validation_session",
+    )
+
+    applied_dosage = serializers.DecimalField(
+        max_digits=8,
+        decimal_places=2,
+        min_value=Decimal("0.01"),
+    )
+
+    fresh_sample_secured = serializers.BooleanField()
+
+    def validate_fresh_sample_secured(self, value):
+        if not value:
+            raise serializers.ValidationError(
+                "Please secure a fresh 1 L raw-water sample "
+                "from the same source before retesting."
+            )
+
+        return value

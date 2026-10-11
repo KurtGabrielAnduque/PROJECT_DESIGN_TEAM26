@@ -65,7 +65,7 @@ class ValidationTrial(models.Model):
         ]
 
     def __str__(self):
-        return f'Session {self.validation_session.id} : Trial {self.trial_no}'
+        return f'ID: {self.id} Session {self.validation_session.id} : Trial {self.trial_no}'
     
 
 class ResultingWaterQuality(models.Model):

@@ -1,6 +1,6 @@
 # SPECIAL IMPORTS
 import requests
-from decimal import Decimal # use for the computation part
+from decimal import Decimal, ROUND_HALF_UP # use for the computation part
 from django.core.exceptions import ObjectDoesNotExist
 # =======
 
@@ -28,6 +28,9 @@ from api.serializers import ResultingWaterQualitySubmissionSerializer
 # start post treatment assessment imports
 from api.serializers import StartTreatedWaterAssessmentRequestSerializer
 from api.services.microcontroller_service import start_treated_water_analysis
+
+# start next trial 
+from api.serializers import StartNextValidationTrialRequestSerializer
 
 # completion view
 from api.serializers import CoagulationCompletionRequestSerializer
@@ -664,3 +667,268 @@ def notify_coagulation_complete(request):
             },
             status=status.HTTP_409_CONFLICT,
         )
+
+
+
+# a view that will be used to start another trials
+'''
+parameter to be send by the frontend
+{
+  "validation_session_id": 1,
+  "applied_dosage": "27.00",
+  "fresh_sample_secured": true
+}
+'''
+@api_view(["POST"])
+def start_next_validation_trial(request):
+    # 1. Validate the modal's request.
+    serializer = StartNextValidationTrialRequestSerializer(
+        data=request.data
+    )
+
+    if not serializer.is_valid():
+        return Response(
+            serializer.errors,
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    session_id = serializer.validated_data[
+        "validation_session"
+    ].id
+    applied_dosage = serializer.validated_data["applied_dosage"]
+
+    # 2. Lock the session while deciding which trial to create.
+    try:
+        with transaction.atomic():
+            session = (
+                ValidationSession.objects
+                .select_for_update()
+                .select_related(
+                    "raw_water_sample",
+                    "lab_settings_configuration",
+                )
+                .get(pk=session_id)
+            )
+
+            if (
+                session.final_trial_id is not None
+                or session.overall_status in {"completed", "validated"}
+            ):
+                return Response(
+                    {
+                        "message": (
+                            "This validation session has already "
+                            "been finalized."
+                        )
+                    },
+                    status=status.HTTP_409_CONFLICT,
+                )
+
+            # 3. Retrieve the settings version associated
+            # with this session.
+            lab_configuration = session.lab_settings_configuration
+
+            try:
+                concentration_config = (
+                    lab_configuration.concentration_config
+                )
+                coagulation_config = (
+                    lab_configuration.coagulation_config
+                )
+            except ObjectDoesNotExist:
+                return Response(
+                    {
+                        "message": (
+                            "The session's settings configuration "
+                            "is missing its concentration or "
+                            "coagulation configuration."
+                        )
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            stock_concentration = (
+                concentration_config.stock_concentration
+            )
+            sample_volume = concentration_config.sample_volume
+
+            if stock_concentration <= 0 or sample_volume <= 0:
+                return Response(
+                    {
+                        "message": (
+                            "Stock concentration and sample volume "
+                            "must be greater than zero."
+                        )
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            # 4. Calculate the dispense volume on the backend.
+            # Dosage: mg/L
+            # Sample volume: L
+            # Stock concentration: g/L
+            applied_volume = (
+                applied_dosage
+                * sample_volume
+                / stock_concentration
+            ).quantize(
+                Decimal("0.01"),
+                rounding=ROUND_HALF_UP,
+            )
+
+            # 5. Find the previous trial in this session.
+            latest_trial = (
+                session.validation_trials
+                .order_by("-trial_no")
+                .first()
+            )
+
+            if latest_trial is None:
+                return Response(
+                    {
+                        "message": (
+                            "No previous trial exists. Start the "
+                            "initial validation trial first."
+                        )
+                    },
+                    status=status.HTTP_409_CONFLICT,
+                )
+
+            # If a start attempt failed, retry using the same
+            # trial ID rather than creating another trial.
+            if latest_trial.status == "start_failed":
+                if latest_trial.applied_dosage != applied_dosage:
+                    return Response(
+                        {
+                            "message": (
+                                "The previous trial's start failed. "
+                                "Retry that trial with the same "
+                                "dosage before requesting a new one."
+                            )
+                        },
+                        status=status.HTTP_409_CONFLICT,
+                    )
+
+                trial = latest_trial
+                trial.applied_volume = applied_volume
+                trial.status = "starting"
+                trial.save(
+                    update_fields=["applied_volume", "status"]
+                )
+
+            else:
+                # A new trial requires the preceding trial to
+                # have a saved and evaluated result.
+                has_result = ResultingWaterQuality.objects.filter(
+                    validation_trial=latest_trial
+                ).exists()
+
+                if (
+                    latest_trial.status not in {"passed", "failed"}
+                    or not has_result
+                ):
+                    return Response(
+                        {
+                            "message": (
+                                "The previous trial must have a "
+                                "recorded result before another "
+                                "trial can begin."
+                            ),
+                            "previous_trial_status": latest_trial.status,
+                        },
+                        status=status.HTTP_409_CONFLICT,
+                    )
+
+                trial = ValidationTrial.objects.create(
+                    validation_session=session,
+                    trial_no=latest_trial.trial_no + 1,
+                    applied_dosage=applied_dosage,
+                    applied_volume=applied_volume,
+                    status="starting",
+                )
+
+            session.overall_status = "starting_treatment"
+            session.save(update_fields=["overall_status"])
+
+    except ValidationSession.DoesNotExist:
+        return Response(
+            {"message": "Validation session not found."},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+
+    except IntegrityError:
+        return Response(
+            {
+                "message": (
+                    "A trial may have been created by another "
+                    "request. Retrieve the session before retrying."
+                )
+            },
+            status=status.HTTP_409_CONFLICT,
+        )
+
+    # 6. Ask the ESP32 to start this specific trial.
+    try:
+        microcontroller_response = start_treatment(
+            microcontroller_base_url=settings.MICROCONTROLLER_BASE_URL,
+            validation_session=session,
+            validation_trial=trial,
+            raw_water_sample=session.raw_water_sample,
+            lab_settings_configuration=lab_configuration,
+            coagulation_configuration=coagulation_config,
+        )
+
+    except requests.exceptions.Timeout:
+        error_message = (
+            "Timed out waiting for the ESP32 acknowledgement."
+        )
+        error_status = status.HTTP_504_GATEWAY_TIMEOUT
+
+    except requests.exceptions.ConnectionError:
+        error_message = "Unable to connect to the ESP32."
+        error_status = status.HTTP_503_SERVICE_UNAVAILABLE
+
+    except requests.exceptions.HTTPError:
+        error_message = "The ESP32 rejected the treatment command."
+        error_status = status.HTTP_502_BAD_GATEWAY
+
+    except (ValueError, requests.exceptions.RequestException):
+        error_message = (
+            "The ESP32 response could not be confirmed."
+        )
+        error_status = status.HTTP_502_BAD_GATEWAY
+
+    else:
+        # 7. Record command acceptance, not physical completion.
+        trial.status = "treating"
+        trial.save(update_fields=["status"])
+
+        session.overall_status = "in_progress"
+        session.save(update_fields=["overall_status"])
+
+        return Response(
+            {
+                "message": "Treatment command accepted.",
+                "status": "started",
+                "session": ValidationSessionSerializer(
+                    session
+                ).data,
+                "validation_trial_id": trial.id,
+                "applied_dosage": str(trial.applied_dosage),
+                "applied_volume": str(trial.applied_volume),
+                "microcontroller_response": microcontroller_response,
+            },
+            status=status.HTTP_202_ACCEPTED,
+        )
+
+    # Preserve the trial if command acceptance failed or timed out.
+    trial.status = "start_failed"
+    trial.save(update_fields=["status"])
+
+    session.overall_status = "in_progress"
+    session.save(update_fields=["overall_status"])
+
+    return Response(
+        {"message": error_message},
+        status=error_status,
+    )
