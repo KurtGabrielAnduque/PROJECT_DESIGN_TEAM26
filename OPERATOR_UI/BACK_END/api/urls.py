@@ -20,5 +20,5 @@ urlpatterns = [
     path("api/validation/coagulation-complete/", validation.notify_coagulation_complete), # notifier if the treatment process is finished
     path("api/validation/assess/",validation.start_treated_water_assessment), # ernd point so operator can assess or measure the clarified water
     path("api/validation/trials/start/", validation.start_next_validation_trial), # end point to start another trial for adjusted dosage
-
+    path("api/validation/sessions/<int:session_id>/", validation.get_validation_session, name="validation-session-detail"), # this is a notification end point about the status of a trial
 ]

@@ -1,6 +1,6 @@
 import React from 'react'
 
-function SummaryHeader({PARAMETERS, validationData, currentDosage, treatmentProcess, stockConcentration, currentVolume, setRawWaterSample, rawWaterSample, handleValidation, warning}) {
+function SummaryHeader({ PARAMETERS, validationData, currentDosage, treatmentProcess, stockConcentration, currentVolume, setRawWaterSample, rawWaterSample, handleValidation, warning, isStartingValidation }) {
     return (
         <>
             <div className="flex flex-col bg-white border border-zinc-200 p-6 gap-6">
@@ -209,8 +209,10 @@ function SummaryHeader({PARAMETERS, validationData, currentDosage, treatmentProc
                             {/* Added 'w-full h-full justify-center rounded-xl' for perfect alignment */}
                             <button
                                 onClick={handleValidation}
-                                className="w-full h-full justify-center px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm rounded-xl shadow-sm transition-colors flex items-center gap-2">
-                                Start Validation
+                                disabled={isStartingValidation}
+                                className="w-full h-full justify-center px-6 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed text-white font-medium text-sm rounded-xl shadow-sm transition-colors flex items-center gap-2"
+                            >
+                                {isStartingValidation ? "Starting Validation..." : "Start Validation"}
                             </button>
                         </div>
 

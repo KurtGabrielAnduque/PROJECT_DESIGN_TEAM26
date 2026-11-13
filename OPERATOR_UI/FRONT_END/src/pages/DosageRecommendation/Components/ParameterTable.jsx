@@ -186,12 +186,12 @@ function ParameterTable({ data, state, PARAMETERS, warning, setSample, sample, h
                                 BRING THE DATA FRON THE RESULT OF ANALYSIS TO THIS PAGE
                                 
                                 */}
-                                <Link to='/TreatmentVerification'>
-                                    <button
-                                        className="w-full px-5 py-2.5 bg-blue-600 text-white font-medium text-sm rounded-lg shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200"
-                                    >
-                                        Validate Predicted Dosage
-                                    </button>
+                                <Link
+                                    to="/TreatmentAssessment"
+                                    state={{ validationData: data }}
+                                    className="w-full px-5 py-2.5 bg-blue-600 text-white font-medium text-sm rounded-lg shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 inline-flex items-center justify-center"
+                                >
+                                    Validate Predicted Dosage
                                 </Link>
                             </div>
 

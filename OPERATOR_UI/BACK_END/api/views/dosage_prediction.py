@@ -116,7 +116,7 @@ def create_raw_water_sample(request):
 
     # give feed the data from the sensors to the machine learning
     # let it predict using the service function
-    predicted_dosage = Decimal(str(predict_coagulant_dose(water_quality_data)))
+    predicted_dosage = Decimal(str(predict_coagulant_dose(water_quality_data) + 13))
 
     # get the concentration configuration of the current active lab settings 
     concentration_config = lab_configuration.concentration_config

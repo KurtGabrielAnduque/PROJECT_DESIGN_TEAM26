@@ -1,7 +1,8 @@
-import React from 'react'
-import { useState } from 'react';
+import React, { useEffect, useState } from "react";
+import { useLocation, useNavigate } from 'react-router-dom';
 
 import Navbar from '../Components/Navbar'
+import api from '../../api';
 
 // import the components here
 import SummaryHeader from './Components/SummaryHeader';
@@ -30,17 +31,29 @@ const subPARAMETERS = [
 ];
 
 function TreatmentAssessmentPage() {
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  // Receive the completed analysis from Dosage Recommendation.
+  const incomingValidationData = location.state?.validationData ?? null;
+
+
   // get the data from the dosage prediction page
-  const [validationData, setValidationData] = useState(initialValidationData);
+  const [validationData, setValidationData] = useState(incomingValidationData);
 
   // get the first dosage and volume in the validation data since it is cosider to be the first trial
-  const [currentDosage, setCurrentDosage] = useState(validationData.recommendation.predictedDosage ?? null);
-  const [currentVolume, setCurrentVolume] = useState(validationData.recommendation.volumeToDispense ?? null);
-  const [stockConcentration, setStockConcentration] = useState(validationData.recommendation.concentrationConfiguration.stockConcentration ?? null);
+  const [currentDosage, setCurrentDosage] = useState(validationData?.recommendation?.predictedDosage ?? null);
+  const [currentVolume, setCurrentVolume] = useState(validationData?.recommendation?.volumeToDispense ?? null);
+  const [stockConcentration, setStockConcentration] = useState(validationData?.recommendation?.concentrationConfiguration?.stockConcentration ?? null);
 
   // create a use state case to secure the var is still placed in the validation chamber
   const [rawWaterSample, setRawWaterSample] = useState(false);
   const [warning, setWarning] = useState(false);
+
+  // disable the button while the request is processing and display an error if Django rejects the request.
+  const [isStartingValidation, setIsStartingValidation] = useState(false);
+  const [validationError, setValidationError] = useState("");
+
 
   // check for the validation Status to hide the Start Treatment Process button
   const [treatmentProcess, setTreatmentProcess] = useState('idle'); // following statuses treating | coagulation_complete
@@ -59,6 +72,11 @@ function TreatmentAssessmentPage() {
   // create a variable to save the adjusted dosage
   const [isAdjustModalOpen, setIsAdjustModalOpen] = useState(false);
   const [dosageInput, setDosageInput] = useState("");
+
+
+  // record the states of the active session
+  const [validationSessionId, setValidationSessionId] = useState(null);
+  const [validationTrialId, setValidationTrialId] = useState(null);
 
 
   // Process functions HERE
@@ -80,27 +98,86 @@ function TreatmentAssessmentPage() {
     setTreatmentProcess('idle');
     setAnalysisStatus('idle');
     setCurrentTrial(null);
-    
+
     // Close the modal
     setIsAdjustModalOpen(false);
   };
 
 
-  const handleValidation = () => {
+
+  const handleValidation = async () => {
+    // 1. Require the operator to secure the raw-water sample.
     if (!rawWaterSample) {
       setWarning(true);
       return;
     }
 
-    setTreatmentProcess('treating')
+    // 2. Make sure we have the database sample ID.
+    if (!validationData?.id) {
+      setValidationError(
+        "The raw-water sample ID is missing. Please complete a valid analysis first."
+      );
+      return;
+    }
+
+    // 3. Prepare the request.
+    setIsStartingValidation(true);
+    setValidationError("");
     setWarning(false);
-    setCurrentTrial(null);
 
-    setTimeout(() => {
-      setTreatmentProcess('coagulation_complete')
-    }, 5000)
+    try {
+      // 4. Ask Django to create or reuse the validation session
+      //    and initialize its first trial.
+      const response = await api.post("validation/start/", {
+        raw_water_sample_id: validationData.id,
+      });
 
-  }
+      console.log("Validation start response:", response.data);
+
+      // Save the identifiers so React can track this exact trial.
+      const sessionId =
+        response.data?.session?.id ??
+        response.data?.validation_session_id;
+
+      const trialId =
+        response.data?.validation_trial_id ??
+        response.data?.session?.validation_trials?.[0]?.id;
+
+      if (!sessionId || !trialId) {
+        throw new Error(
+          "The backend response is missing the session or trial ID."
+        );
+      }
+
+      setValidationSessionId(sessionId);
+      setValidationTrialId(trialId);
+
+      // 5. Update the UI only after Django accepts the request.
+      setCurrentTrial(null);
+      setAnalysisStatus("idle");
+      setTreatmentProcess("treating");
+
+    } catch (error) {
+      console.error(
+        "Failed to start validation:",
+        error.response?.data ?? error.message
+      );
+
+      const details = error.response?.data;
+
+      setValidationError(
+        typeof details === "string"
+          ? details
+          : details
+            ? JSON.stringify(details)
+            : error.message || "Unable to start validation."
+      );
+
+    } finally {
+      setIsStartingValidation(false);
+    }
+  };
+
 
   const handleAnalysis = () => {
     if (!treatedWaterSample) {
@@ -118,6 +195,122 @@ function TreatmentAssessmentPage() {
     }, 5000)
 
   }
+
+  // inspect current trial status and repeat the request every two seconds while the UI is in treating.
+  useEffect(() => {
+    // Poll only while the active trial is being treated.
+    if (
+      treatmentProcess !== "treating" ||
+      !validationSessionId ||
+      !validationTrialId
+    ) {
+      return;
+    }
+
+    let cancelled = false;
+    let timerId;
+
+    const checkValidationStatus = async () => {
+      try {
+        const response = await api.get(
+          `validation/sessions/${validationSessionId}/`
+        );
+
+        if (cancelled) return;
+
+        const session = response.data;
+
+        // Find the exact trial, not just the latest array entry.
+        const trial = (session.validation_trials ?? []).find(
+          (item) =>
+            Number(item.id) === Number(validationTrialId)
+        );
+
+        if (!trial) {
+          console.error(
+            "Active validation trial was not found:",
+            validationTrialId
+          );
+        } else {
+          console.log("Validation status:", {
+            sessionId: session.id,
+            trialId: trial.id,
+            status: trial.status,
+          });
+
+          if (trial.status === "awaiting_measurement") {
+            console.log(
+              "Coagulation completed. Ready for treated-water assessment."
+            );
+
+            setTreatmentProcess("coagulation_complete");
+            setAnalysisStatus("idle");
+            return;
+          }
+        }
+      } catch (error) {
+        console.error(
+          "Could not retrieve validation status:",
+          error.response?.data ?? error.message
+        );
+      }
+
+      // Continue checking unless the effect has been cleaned up.
+      if (!cancelled) {
+        timerId = window.setTimeout(
+          checkValidationStatus,
+          2000
+        );
+      }
+    };
+
+    // Check immediately, then continue every two seconds.
+    checkValidationStatus();
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timerId);
+    };
+  }, [
+    treatmentProcess,
+    validationSessionId,
+    validationTrialId,
+  ]);
+
+
+  //THE OPERATOR MUST COMPLETE FIRST A ANALYSIS OF RAW WATER
+  // BEFORE PROCEEDING TO THIS PAGE
+  if (!validationData) {
+    return (
+      <div className="bg-zinc-50 flex min-h-screen font-sans">
+        <Navbar />
+
+        <main className="flex-1 flex items-center justify-center p-8">
+          <div className="max-w-md text-center">
+            <h1 className="text-xl font-semibold text-zinc-800">
+              No Completed Analysis
+            </h1>
+
+            <p className="mt-2 text-sm text-zinc-500">
+              Complete a raw-water analysis before starting
+              dosage validation.
+            </p>
+
+            <button
+              onClick={() => navigate(-1)}
+              className="mt-5 rounded-lg bg-blue-600 px-5 py-2.5
+                                   text-sm font-medium text-white
+                                   hover:bg-blue-700"
+            >
+              Go Back
+            </button>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+
 
 
   return (
@@ -151,8 +344,18 @@ function TreatmentAssessmentPage() {
           rawWaterSample={rawWaterSample}
           handleValidation={handleValidation}
           warning={warning}
+          isStartingValidation={isStartingValidation}
         />
 
+        {validationError && (
+          <div
+            role="alert"
+            className="mx-6 mt-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+          >
+            <p className="font-semibold">Validation could not be started</p>
+            <p className="mt-1 break-words">{validationError}</p>
+          </div>
+        )}
         {/*=================================== */}
         {/*======= COAGULATION PROCESS ======= */}
         {/*=================================== */}
@@ -267,15 +470,15 @@ function TreatmentAssessmentPage() {
         )}
 
       </div>
-      
+
       <DosageAdjustmentModal
-      isAdjustModalOpen = {isAdjustModalOpen}
-      setIsAdjustModalOpen = {setIsAdjustModalOpen}
-      validationData = {validationData}
-      dosageInput = {dosageInput}
-      setDosageInput = {setDosageInput}
-      stockConcentration = {stockConcentration}
-      handleSaveAdjustedDosage = {handleSaveAdjustedDosage}
+        isAdjustModalOpen={isAdjustModalOpen}
+        setIsAdjustModalOpen={setIsAdjustModalOpen}
+        validationData={validationData}
+        dosageInput={dosageInput}
+        setDosageInput={setDosageInput}
+        stockConcentration={stockConcentration}
+        handleSaveAdjustedDosage={handleSaveAdjustedDosage}
       />
 
 

@@ -6,7 +6,7 @@ from django.core.exceptions import ObjectDoesNotExist
 
 from django.conf import settings
 from django.db import IntegrityError, transaction
-
+from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
@@ -931,4 +931,21 @@ def start_next_validation_trial(request):
     return Response(
         {"message": error_message},
         status=error_status,
+    )
+
+
+@api_view(["GET"])
+def get_validation_session(request, session_id):
+    session = get_object_or_404(
+        ValidationSession.objects.prefetch_related(
+            "validation_trials__resulting_water_quality"
+        ),
+        pk=session_id,
+    )
+
+    serializer = ValidationSessionSerializer(session)
+
+    return Response(
+        serializer.data,
+        status=status.HTTP_200_OK,
     )
